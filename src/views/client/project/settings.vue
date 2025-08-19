@@ -24,6 +24,15 @@
                             <p class="font-medium text-lg">{{ project.project_name }} <span class="text-sm">({{ project.project_key }})</span></p>
                             <span v-if="project.start_date && project.end_date">Từ {{ dayjs(project.start_date).format('DD/MM/YYYY') }} tới {{ dayjs(project.end_date).format('DD/MM/YYYY') }}</span>
                         </div>
+                        <div class="px-4">
+                            <div class="flex justify-between">
+                                <p class="font-medium">Mô tả</p>
+                                <Button icon="pi pi-pen-to-square" v-tooltip:left="'Chỉnh sửa mô tả dự án'"/>
+                            </div>
+                            <div class="px-8">
+                                <span v-html="project.description"></span>
+                            </div>
+                        </div>
                     </TabPanel>
                     <TabPanel value="1">
                         <div class="m-4">
@@ -67,7 +76,7 @@
                                                 />
                                             </td>
                                             <td class="px-3 py-2">{{ dayjs(member.created_at).format('DD/MM/YYYY HH:mm') }}</td>
-                                            <template v-if="userStore.isSystemAdmin || (!userStore.isSystemAdmin && userStore.isProjectManager && member.project_role !== 'PManager')">
+                                            <template v-if="(userStore.isSystemAdmin || (!userStore.isSystemAdmin && userStore.isProjectManager && member.project_role !== 'PManager')) && userStore.user.id != member.user_id">
                                                 <td class="px-3 py-2">
                                                     <Button icon="pi pi-trash" size="small" severity="danger" @click="openConfirmDialog(member)"/>
                                                 </td>
@@ -95,27 +104,19 @@
                             <template v-if="userStore.isSystemAdmin || userStore.projectRole == 'PManager'">
                                 <Button label="Thêm" icon="pi pi-plus" rounded variant="outlined" @click="openCategoryDialog('add')"/>
                             </template>
-                            <Dialog v-model:visible="openAddTaskCategory" :style="{width: '50vw'}" @hide="onDialogHide" :header="isEditCategory ? 'Chỉnh sửa danh mục' : 'Tạo mới danh mục'" :draggable="false" :modal="true">
-                                <div class="my-4">
-                                    <label for="password">Tên danh mục</label>
-                                    <InputText id="password" v-model="category_type" class="w-full" type="text" autocomplete="off"/>
-                                </div>
-                                <div class="my-4">
-                                    <label>Màu hiển thị</label>
-                                    <div class="flex items-center gap-4 justify-start">
-                                        <InputText v-model="category_color" class="w-lg"/>
-                                        <ColorPicker v-model="category_color" inputId="cp-hex" format="hex"/>
-                                    </div>
-                                </div>
-                                <div class="flex justify-around mt-4 pt-4">
-                                    <Button label="Hủy" class="w-75" severity="secondary" size="small" variant="outlined" @click="openAddTaskCategory = false"/>
-                                    <template v-if="!isEditCategory">
-                                        <Button label="Thêm" class="w-75" size="small" variant="outlined" @click="addCategory" :loading="isCategoryLoading" loadingIcon="pi pi-spin pi-spinner"/>
-                                    </template>
-                                    <template v-else>
-                                        <Button label="Sửa" class="w-75" size="small" variant="outlined" @click="updateCategory" :loading="isCategoryLoading" loadingIcon="pi pi-spin pi-spinner"/>
+                            <Dialog v-model:visible="openAddTaskCategory" :style="{width: '50vw'}" @hide="onDialogHide" header="Thêm danh mục mới" :draggable="false" :modal="true">
+                                <div class="grid grid-cols-2 gap-2 m-4">
+                                    <template v-for="(category, index) in allExistCategories">
+                                        <div class="m-4">
+                                            <Button icon="pi pi-plus" variant="outlined" rounded size="small" @click="addCategory(category.id)"/>
+                                            <span class="px-4 py-1 mx-4 text-white font-medium rounded-full" 
+                                                :style="{ backgroundColor: category.category_color }">
+                                                {{ index + 1 }}: {{category.category_type}}
+                                            </span>
+                                        </div>
                                     </template>
                                 </div>
+                                <Button label="Đóng" icon="pi pi-times" @click="openAddTaskCategory = false"/>
                             </Dialog>
                         </div>
                         <div class="m-4">
@@ -133,19 +134,18 @@
                                     <template v-for="(issue, index) in issues" :key="issue.id">
                                         <tr class="hover:bg-gray-100 cursor-default">
                                             <td class="px-3 py-2">{{ index + 1 }}</td>
-                                            <td class="px-3 py-2">{{ issue.category_type }}</td>
+                                            <td class="px-3 py-2">{{ issue.category.category_type }}</td>
                                             <td class="px-3 py-2">
                                                 <div class="flex items-center justify-center gap-2">
-                                                    <div :style="{ backgroundColor: issue.category_color }" class="p-4 w-2 h-2 rounded-full"></div>
+                                                    <div :style="{ backgroundColor: issue.category.category_color }" class="p-4 w-2 h-2 rounded-full"></div>
                                                     <span>
-                                                        {{ issue.category_color }}
+                                                        {{ issue.category.category_color }}
                                                     </span>
                                                 </div>
                                             </td>
                                             <td class="px-3 py-2">{{ dayjs(issue.created_at).format('DD/MM/YYYY HH:mm') }}</td>
                                             <template v-if="userStore.isSystemAdmin || userStore.projectRole == 'PManager'">
                                                 <td class="px-3 py-2 flex gap-2 items-center justify-center">
-                                                    <Button icon="pi pi-pencil" size="small" severity="info" @click="openCategoryDialog('update', issue)"/>
                                                     <Button icon="pi pi-trash" size="small" severity="danger" @click="deleteCategory(issue.id)"/>
                                                 </td>
                                             </template>
@@ -173,25 +173,18 @@
                                 <Button label="Thêm" icon="pi pi-plus" rounded variant="outlined" @click="openStatusDialog('add')" />
                             </template>
                             <Dialog v-model:visible="openAddTaskStatus" :style="{width: '50vw'}" @hide="onDialogHide" :header="isEditStatus ? 'Chỉnh sửa trạng thái' : 'Tạo mới trạng thái'" :draggable="false" :modal="true">
-                                <div class="my-4">
-                                    <label for="status_type">Tên trạng thái</label>
-                                    <InputText id="status_type" v-model="status_type" class="w-full" type="text" autocomplete="off"/>
-                                </div>
-                                <div class="my-4">
-                                    <label>Màu hiển thị</label>
-                                    <div class="flex items-center gap-4 justify-start">
-                                        <InputText v-model="status_color" class="w-lg"/>
-                                        <ColorPicker v-model="status_color" inputId="cp-hex" format="hex"/>
-                                    </div>
-                                </div>
-                                <div class="flex justify-around mt-4 pt-4">
-                                    <Button label="Hủy" class="w-75" severity="secondary" size="small" variant="outlined" @click="openAddTaskStatus = false"/>
-                                    <template v-if="!isEditStatus">
-                                        <Button label="Thêm" class="w-75" size="small" variant="outlined" @click="addStatus" :loading="isStatusLoading" loadingIcon="pi pi-spin pi-spinner"/>
+                                <div class="grid grid-cols-2 gap-2 m-4">
+                                    <template v-for="(status, index) in allExistStatuses">
+                                        <div class="m-4">
+                                            <Button icon="pi pi-plus" variant="outlined" rounded size="small" @click="addStatus(status.id)"/>
+                                            <span class="px-4 py-1 mx-4 text-white font-medium rounded-full" 
+                                                :style="{ backgroundColor: status.status_color }">
+                                                {{ index + 1 }}: {{status.status_type}}
+                                            </span>
+                                        </div>
                                     </template>
-                                    <template v-else>
-                                        <Button label="Sửa" class="w-75" size="small" variant="outlined" @click="updateStatus" :loading="isStatusLoading" loadingIcon="pi pi-spin pi-spinner"/>
-                                    </template></div>
+                                </div>
+                                <Button label="Đóng" icon="pi pi-times" @click="openAddTaskStatus = false"/>
                             </Dialog>
                         </div>
                         <div class="m-4">
@@ -209,19 +202,18 @@
                                     <template v-for="(status, index) in statuses" :key="status.id">
                                         <tr class="hover:bg-gray-100 cursor-default">
                                             <td class="px-3 py-2">{{ index + 1 }}</td>
-                                            <td class="px-3 py-2">{{ status.status_type }}</td>
+                                            <td class="px-3 py-2">{{ status.status.status_type }}</td>
                                             <td class="px-3 py-2">
                                                 <div class="flex items-center justify-center gap-2">
-                                                    <div :style="{ backgroundColor: status.status_color }" class="p-4 w-2 h-2 rounded-full"></div>
+                                                    <div :style="{ backgroundColor: status.status.status_color }" class="p-4 w-2 h-2 rounded-full"></div>
                                                     <span>
-                                                        {{ status.status_color }}
+                                                        {{ status.status.status_color }}
                                                     </span>
                                                 </div>
                                             </td>
                                             <td class="px-3 py-2">{{ dayjs(status.created_at).format('DD/MM/YYYY HH:mm') }}</td>
                                             <template v-if="userStore.isSystemAdmin || userStore.projectRole == 'PManager'">
                                                 <td class="px-3 py-2 flex gap-2 items-center justify-center">
-                                                    <Button icon="pi pi-pencil" size="small" severity="info" @click="openStatusDialog('update', status)"/>
                                                     <Button icon="pi pi-trash" size="small" severity="danger" @click="deleteStatus(status.id)"/>
                                                 </td>
                                             </template>
@@ -267,6 +259,9 @@ const project = ref({});
 const members = ref ({});
 const issues = ref({});
 const statuses = ref({});
+
+const allExistCategories = ref({});
+const allExistStatuses = ref({})
 
 const totalMember = ref(0);
 const currentPageMember = ref(1);
@@ -412,20 +407,19 @@ async function getProjectStatuses() {
     }
 }
 
-async function addCategory() {
+async function addCategory(category_id) {
     try {
         isCategoryLoading.value = true;
-        const color = `#${category_color.value}`
         const response = await api.post('project/createProjectIssue', {
             project_id: project.value.id,
-            category_type: category_type.value,
-            category_color: color,
+            category_id: category_id,
         })
         
         const result = response.data;
         if (result.success) {
             toast.success('Thêm mới thành công', 'Thông báo');
             getProjectIssues();
+            getTaskCategory();
             openAddTaskCategory.value = false;
         } else {
             toast.error(result.message ,'Có lỗi xảy ra')
@@ -438,47 +432,38 @@ async function addCategory() {
     }
 }
 
-async function updateCategory() {
+async function getTaskCategory() {
     try {
-        isCategoryLoading.value = true;
-        const color = `#${category_color.value}`
-        const response = await api.post('project/updateProjectIssue', {
-            issue_id: category_id.value,
-            category_type: category_type.value,
-            category_color: color,
+        const response = await api.get('project/get/task-category', {
+            params: {
+                project_id: project.value.id
+            }
         })
         
         const result = response.data;
         if (result.success) {
-            toast.success('Chỉnh sưa thành công', 'Thông báo');
-            getProjectIssues();
-            openAddTaskCategory.value = false;
+            allExistCategories.value = result.categories.data;
         } else {
             toast.error(result.message ,'Có lỗi xảy ra')
         }
     } catch (error) {
         console.log(error.message);
-        isCategoryLoading.value = false;
-    } finally {
-        isCategoryLoading.value = false;
     }
 }
 
-
-async function addStatus() {
+async function addStatus(status_id) {
     try {
         isStatusLoading.value = true;
-        const color = `#${status_color.value}`
         const response = await api.post('project/createProjectStatus', {
             project_id: project.value.id,
-            status_type: status_type.value,
-            status_color: color,
+            status_id: status_id,
         })
         
         const result = response.data;
         if (result.success) {
             toast.success('Thêm mới thành công', 'Thông báo');
             getProjectStatuses();
+            getTaskStatus();
             openAddTaskStatus.value = false;
         } else {
             toast.error(result.message ,'Có lỗi xảy ra')
@@ -492,29 +477,22 @@ async function addStatus() {
 }
 
 
-async function updateStatus() {
+async function getTaskStatus() {
     try {
-        isStatusLoading.value = true;
-        const color = `#${status_color.value}`
-        const response = await api.post('project/updateProjectStatus', {
-            status_id: status_id.value,
-            status_type: status_type.value,
-            status_color: color,
+        const response = await api.get('project/get/task-status', {
+            params: {
+                project_id: project.value.id
+            }
         })
         
         const result = response.data;
         if (result.success) {
-            toast.success('Chỉnh sưa thành công', 'Thông báo');
-            getProjectStatuses();
-            openAddTaskStatus.value = false;
+            allExistStatuses.value = result.statuses.data;
         } else {
             toast.error(result.message ,'Có lỗi xảy ra')
         }
     } catch (error) {
         console.log(error.message);
-        isStatusLoading.value = false;
-    } finally {
-        isStatusLoading.value = false;
     }
 }
 
@@ -538,11 +516,55 @@ async function delMember() {
     }
 }
 
+async function deleteCategory(category_id) {
+    try {
+        const response = await api.post('/project/delete/project-category', {
+            category_id: category_id,
+            project_id: project.value.id,
+        })
+
+        const result = response.data;
+        
+        if (result.success) {
+            toast.success(result.message, 'Thông báo')
+            getProjectIssues();
+            getTaskCategory();
+        } else {
+            toast.warn(result.message, 'Lỗi')
+        }
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
+async function deleteStatus(status_id) {
+    try {
+        const response = await api.post('/project/delete/project-status', {
+            status_id: status_id,
+            project_id: project.value.id,
+        })
+
+        const result = response.data;
+        
+        if (result.success) {
+            toast.success(result.message, 'Thông báo')
+            getProjectStatuses();
+            getTaskStatus();
+        } else {
+            toast.warn(result.message, 'Lỗi')
+        }
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
 onMounted(async () => {
     await getProject();
     getProjectMembers();
     getProjectIssues();
     getProjectStatuses();
+    getTaskCategory();
+    getTaskStatus();
 })
 
 </script>

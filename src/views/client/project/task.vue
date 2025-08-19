@@ -16,7 +16,7 @@
                 <div class="flex items-center justify-between m-4">
                     <div class="flex items-center gap-2">
                         <label class="font-medium" for="selectStatus">Trạng thái:</label>
-                        <SelectButton id="selectStatus" v-model="statusFilter" :options="statuses" optionLabel="status_type" optionValue="id" @change="onStatusChange" />
+                        <SelectButton id="selectStatus" v-model="statusFilter" :options="statuses" optionLabel="status.status_type" optionValue="status.id" @change="onStatusChange" />
                     </div>
                     <div v-if="userStore.isSystemAdmin || userStore.projectRole == 'PManager'" class="flex items-center gap-2">
                         <label class="font-medium" for="isDelEnabel">Đã xóa:</label>
@@ -27,7 +27,7 @@
                     <div class="m-4 flex items-center gap-2">
                         <div class="flex flex-col gap-1 mx-4">
                             <label for="" class="font-medium">Danh mục</label>
-                            <Select v-model="categoryFilter" :options="issues" optionLabel="category_type" optionValue="id" class="w-40" />
+                            <Select v-model="categoryFilter" :options="issues" optionLabel="category.category_type" optionValue="category.id" class="w-40" />
                         </div>
                         <div class="flex flex-col gap-1 mx-4">
                             <label for="" class="font-medium">Assignee</label>
@@ -130,6 +130,7 @@ const userStore = useUserStore();
 const project = ref({});
 const statuses = ref({});
 const issues = ref({});
+
 
 const isDelEnable = ref(false);
 const statusFilter = ref();

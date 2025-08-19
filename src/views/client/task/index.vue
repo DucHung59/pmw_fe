@@ -14,7 +14,7 @@
             <template v-if="task.id">
                 <Dialog v-model:visible="openEditTaskDialog" :style="{width: '50vw'}" header="Chỉnh sửa nội dung công việc" :draggable="false" :modal="true">
                     <div>
-                        <Select v-model="category" :options="issues" optionLabel="category_type" optionValue="id" placeholder="Chọn danh mục" class="w-full md:w-56" />
+                        <Select v-model="category" :options="issues" optionLabel="category.category_type" optionValue="category.id" placeholder="Chọn danh mục" class="w-full md:w-56" />
                     </div>
                     <div class="my-4">
                         <label for="subject">Tiêu đề</label>
@@ -170,10 +170,10 @@
                         <div class="md:col-span-2">
                             <Editor v-model="comment" editorStyle="height: 200px" style="width: 100%"/>
                         </div>
-                        <div class="md:col-span-1" v-if="assignee == userStore.user.id || !task.assignee || userStore.isProjectManager">
+                        <div class="md:col-span-1" v-if="task.assignee == userStore.user.id || !task.assignee || userStore.isProjectManager">
                             <div class="grid grid-cols-[8rem_1fr] my-4 gap-2 items-center">
                                 <span>Trạng thái:</span>
-                                <Select v-model="selectedStatus" :options="statuses" optionLabel="status_type" optionValue="id" placeholder="Chọn trạng thái" class="w-full md:w-56"/>
+                                <Select v-model="selectedStatus" :options="statuses" optionLabel="status.status_type" optionValue="status.id" placeholder="Chọn trạng thái" class="w-full md:w-56"/>
                             </div>
                             <div class="grid grid-cols-[8rem_1fr] my-4 gap-2 items-center">
                                 <span>Chuyển tới:</span>
@@ -427,6 +427,7 @@ async function addComment() {
     const date = due_date.value ? dayjs(due_date.value).format('DD-MM-YYYY HH:mm:ss') : null;
     try {
         isAddCommentLoading.value = true;
+        console.log(selectedStatus.value);
         
         const response = await api.post('task/addComment', {
             id: task.value.id,
@@ -454,6 +455,8 @@ async function addComment() {
 
 async function update() {
     try {
+        console.log(category.value);
+
         isUpdateTask.value = true;
         const response = await api.post('/task/update', {
             task_id: task.value.id,

@@ -145,11 +145,16 @@
                     </div>
                 </TabPanel>
                 <TabPanel value="2">
-                    <template v-for="project in projectList" :key="project.project_id">
-                        <div class="m-6">
-                            <p class="text-lg font-semibold mb-2">{{ project.project_name }} <span class="text-sm">(Tổng công việc: {{ project.user_task_count }} / {{ project.total_tasks }} - {{ project.user_task_percentage }}%)</span></p>
-                            <MeterGroup :value="project.statuses" labelPosition="end" labelOrientation="horizontal"/>
-                        </div>
+                    <template v-if="projectList.length > 0">
+                        <template v-for="project in projectList" :key="project.project_id">
+                            <div class="m-6">
+                                <p class="text-lg font-semibold mb-2">{{ project.project_name }} <span class="text-sm">(Tổng công việc: {{ project.user_task_count }} / {{ project.total_tasks }} - {{ project.user_task_percentage }}%)</span></p>
+                                <MeterGroup :value="project.statuses" labelPosition="end" labelOrientation="horizontal"/>
+                            </div>
+                        </template>
+                    </template>
+                    <template v-else>
+                        <p>Không có công việc nào được hiển thị</p>
                     </template>
                 </TabPanel>
             </TabPanels>

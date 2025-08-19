@@ -15,6 +15,10 @@
                 <p class="font-medium text-lg">Tài liệu</p>
                 <Button icon="pi pi-plus" rounded v-tooltip.left="'Thêm tài liệu'" @click="addDocumentDialog = true" v-if="userStore.isSystemAdmin || userStore.isProjectManager"/>
                 <Dialog v-model:visible="addDocumentDialog" header="Thêm tài liệu mới" :style="{width: '50vw'}" :draggable="false" maximizable="true" :modal="true">
+                    <div class="p-4 flex gap-2 items-center">
+                        <label>Chỉ quản lý: </label>
+                        <ToggleButton v-model="isManagerView" class="w-24" onLabel="Mở" offLabel="Đóng" size="small"/>
+                    </div>
                     <FileUpload name="document[]" :customUpload="true" @uploader="onCustomUpload" :multiple="false" accept=".pdf,.docx,.xlsx,.png,.jpg" :maxFileSize="104857600" @select="onSelectedFiles">
                         <template #header="{ chooseCallback, clearCallback, files }">
                             <div class="flex flex-wrap justify-between items-center flex-1 gap-4">
@@ -72,7 +76,7 @@
             <div class="my-4">
                 <p class="font-medium">Chi tiết các tài liệu của dự án</p>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div>
                 <Dialog v-model:visible="confirmDialog" header="Bạn có chắc chắn không?" :style="{ width: '40vw' }" :draggable="false" :modal="true">
                     <p class="text-center">Bạn có chắc chắn xóa {{ delFile.title }}</p>
                     <div class="flex justify-center items-center my-8 gap-2">
@@ -80,33 +84,44 @@
                         <Button icon="pi pi-trash" label="Chắc chắn" severity="danger" @click="delDocument"/>
                     </div>
                 </Dialog>
-                <template v-for="file in listFiles">
-                    <div class="p-4 border border-gray-400 rounded-2xl">
-                        <div class="flex justify-between items-center">
-                            <p class="font-medium cursor-default">{{ file.title }}</p>
-                            <div class="flex justify-center gap-2 items-center">
-                                <a :href="`http://localhost:8000${file.full_url}`" target="_blank">Xem tài liệu</a>
-                                <Button icon="pi pi-trash" variant="text" severity="danger" rounded @click="openConfirmDialog(file)" v-if="userStore.isSystemAdmin || userStore.isProjectManager"/>
-                            </div>
-                        </div>
-                        <iframe
-                            v-if="file.full_url.endsWith('.pdf')"
-                            :src="`http://localhost:8000${file.full_url}`"
-                            width="100%"
-                            height="500px"
-                            class="mt-2"
-                        ></iframe>
-                        <img
-                            v-else-if="file.full_url && /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(file.full_url)"
-                            :src="`http://localhost:8000${file.full_url}`"
-                            alt="Hình ảnh"
-                            class="mt-2 w-full max-h-[400px] object-contain"
-                        />
-                        <div v-else class="mt-2 text-sm text-gray-600">
-                            File không xem được trực tiếp. Bạn hãy nhấn "Xem tài liệu" để tải về.
-                        </div>
-                    </div>
-                </template>
+
+                <table class="w-full text-sm tr-border mb-4">
+                    <thead>
+                        <tr>
+                            <th class="px-3 py-2 border">#</th>
+                            <th class="px-3 py-2 border">Tên file</th>
+                            <th class="px-3 py-2 border">Ngày tạo</th>
+                            <th class="px-3 py-2 border">Chi tiết</th>
+                            <th class="px-3 py-2 border">Cài đặt</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-center">
+                        <template v-for="(file, index) in filteredFiles">
+                            <tr class="hover:bg-gray-100 cursor-default">
+                                <td class="px-3 py-2">{{ index + 1 }}</td>
+                                <td class="px-3 py-2">{{ file.title }}</td>
+                                <td class="px-3 py-2">{{ dayjs(file.created_at).format('DD/MM/YYYY HH:mm') }}</td>
+                                <td class="px-3 py-2"><a :href="`http://localhost:8000${file.full_url}`" target="_blank">Xem tài liệu</a></td>
+                                <template v-if="userStore.isSystemAdmin || userStore.isProjectManager">
+                                    <td class="px-3 py-2">
+                                        <Button icon="pi pi-trash" variant="text" severity="danger" rounded @click="openConfirmDialog(file)"/>
+                                    </td>
+                                </template>
+                                <template v-else>
+                                    <td class="px-3 py-2">
+                                        <Button icon="pi pi-ban" size="small" disabled severity="warn"/>
+                                    </td>
+                                </template>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                <Paginator
+                    :rows="perPage"
+                    :totalRecords="total"
+                    :first="(currentPage - 1) * perPage"
+                    @page="(event) => onMemberPageChange(event, 'member')"
+                /> 
             </div>
         </div>
     </div>
@@ -116,7 +131,8 @@ import api from '@/api/axios';
 import { toastService } from '@/assets/js/toastHelper';
 import Sidebar from '@/components/common/Sidebar.vue';
 import { useUserStore } from '@/store/user';
-import { Button, Dialog, FileUpload, usePrimeVue, useToast } from 'primevue';
+import dayjs from 'dayjs';
+import { Button, Dialog, FileUpload, usePrimeVue, useToast, ToggleButton, Paginator } from 'primevue';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -130,18 +146,29 @@ const project_key = computed(() => route.params.project_key);
 const project = ref({});
 
 const toast = new toastService(useToast());
+const isManagerView = ref(false);
 
 const confirmDialog = ref(false);
 const addDocumentDialog = ref(false);
 const totalSize = ref(0);
 const files = ref([]);
-const listFiles = ref({});
+const listFiles = ref([]);
 const delFile = ref();
+const total = ref(0);
+const currentPage = ref(1);
+const perPage = 15;
 
 const isImage = (file) => file.type.startsWith('image/');
 const isPdf = (file) => file.type === 'application/pdf';
 const isDocx = (file) => file.name.endsWith('.doc') || file.name.endsWith('.docx');
 const isExcel = (file) => file.name.endsWith('.xls') || file.name.endsWith('.xlsx');
+
+const filteredFiles = computed(() => {
+  return Array.isArray(listFiles.value)
+    ? listFiles.value.filter(file => file.manager_view != 1 || userStore.isProjectManager || userStore.isSystemAdmin)
+    : [];
+});
+
 
 const openConfirmDialog = (file) => {
     delFile.value = file;
@@ -155,7 +182,6 @@ const handleChooseFile = (chooseCallback, files) => {
     }
     chooseCallback();
 };
-
 
 const onSelectedFiles = (event) => {
     files.value = event.files;
@@ -202,10 +228,13 @@ async function onCustomUpload() {
         return;
     }
     
+    const manager_view = isManagerView.value ? 1 : 0
+
     const file = files.value[0];
     const formData = new FormData();
     formData.append('document', file);
     formData.append('project_id', project.value.id);
+    formData.append('manager_view', manager_view);
 
     try {
         const response = await api.post('project/document/upload', formData, {
@@ -238,7 +267,9 @@ async function getDocument() {
 
         const result = response.data;
         if (result.success) {
-            listFiles.value = result.documents;
+            listFiles.value = result.documents.data;
+            total.value = result.documents.total;
+            currentPage.value = result.documents.current_page;
         }
     } catch (error) {
         console.log(error.message);

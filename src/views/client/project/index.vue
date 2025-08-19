@@ -298,7 +298,7 @@ async function getReportsData() {
         tasks.value = result.data.map(item => ({
             label: item.label,
             color: item.color,
-            value: (item.count/totalTask.value)*100
+            value: item.count ? (item.count/totalTask.value)*100 : 0,
         }));
         console.log(tasks.value);
     } catch (error) {
@@ -382,8 +382,10 @@ onMounted(async () => {
     getReportsData();
 })
 
-watch(project_key, () => {
-    getProject();
+watch(project_key, async () => {
+    await getProject();
+    getProjectLogs();
+    getReportsData();
 });
 
 </script>

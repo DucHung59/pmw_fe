@@ -54,7 +54,7 @@
                             </RouterLink>
                         </li>
                         <li class="action-item">
-                            <RouterLink>
+                            <RouterLink :to="`/workspace/activity/${userStore.user.id}/${userStore.user.username}`">
                                 Công việc
                             </RouterLink>
                         </li>

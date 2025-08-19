@@ -28,6 +28,10 @@
                                     <InputText id="project-key" v-model="project_key" aria-describedby="project-key-help" @input="toUppercase"/>
                                     <Message :severity="project_key_error ? 'error' : 'secondary'" class="pl-4 italic" size="small" variant="simple">Khóa dự án không được để trống, chỉ bao gồm các chữ cái in hoa, số và gạch dưới</Message>
                                 </div>
+                                <div class="flex flex-col gap-2 pt-4">
+                                    <label for="description">Mô tả dự án</label>
+                                    <Editor v-model="description" editorStyle="height: 120px"/>                                
+                                </div>
                                 <div class="flex flex-col gap-2 pt-4">  
                                     <label for="project-key" class="pl-4">Ngày bắt đầu</label>
                                     <DatePicker v-model="start_date" placeholder="Chọn ngày bắt đầu" showIcon  dateFormat="dd/mm/yy" class="w-full md:w-56" />
@@ -221,6 +225,7 @@ import { toastService } from '@/assets/js/toastHelper';
 import { useUserStore } from '@/store/user';
 import dayjs from 'dayjs';
 import { Button, Dialog, InputText, Message, SelectButton, useToast, Skeleton, DatePicker } from 'primevue';
+import Editor from 'primevue/editor';
 import { onMounted, ref, watch } from 'vue';
 
 

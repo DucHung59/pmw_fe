@@ -1,5 +1,5 @@
 <template>
-    <Sidebar :active="'add'" :project_key="project.project_key" />
+    <Sidebar :active="'add task'" :project_key="project.project_key" />
     <div style="margin-left: 60px;">
         <div class="project-header flex items-center justify-between">
             <div class="flex items-center gap-2" v-if="!project.project_name">
@@ -13,16 +13,13 @@
         <div class="m-16">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-2xl font-semibold">Thêm Task</p>
-                </div>
-                <div>
-                    <Button :loading="isCreating" loadingIcon="pi pi-spin pi-spinner" label="Thêm Task" @click="addTask" />
+                    <p class="text-2xl font-semibold">Thêm công việc/nhiệm vụ</p>
                 </div>
             </div>
             <div class="mt-4">
                 <div class="flex flex-col gap-2">
                     <div>
-                        <Select v-model="selectedIssue" :options="issues" optionLabel="category_type" optionValue="id" placeholder="Chọn danh mục" class="w-full md:w-56" />
+                        <Select v-model="selectedIssue" :options="issues" optionLabel="category.category_type" optionValue="category.id" placeholder="Chọn danh mục" class="w-full md:w-56" />
                     </div>
                     <InputText v-model="subject" placeholder="Tên công việc (bắt buộc)" class="w-full" />
                 </div>
@@ -33,7 +30,7 @@
                     <div class="grid grid-cols-2 gap-8">
                         <div class="grid grid-cols-[12rem_1fr] items-center justify-around gap-2 border-b border-gray-400 p-4">
                             <p>Trạng thái</p>
-                            <Select v-model="selectedStatus" :options="statuses" optionLabel="status_type" optionValue="id" placeholder="Chọn trạng thái" class="w-full md:w-56" />
+                            <Select v-model="selectedStatus" :options="statuses" optionLabel="status.status_type" optionValue="status.id" placeholder="Chọn trạng thái" class="w-full md:w-56" />
                         </div>
                         <div class="grid grid-cols-[12rem_1fr] items-center justify-around gap-2 border-b border-gray-400 p-4">
                             <p>Người được giao</p>
@@ -50,7 +47,7 @@
                     </div>
                 </div>
                 <div class="flex justify-end my-4">
-                    <Button :loading="isCreating" loadingIcon="pi pi-spin pi-spinner" label="Thêm Task" @click="addTask" />
+                    <Button :loading="isCreating" loadingIcon="pi pi-spin pi-spinner" icon="pi pi-plus" label="Thêm công việc" @click="addTask" />
                 </div>
             </div>
         </div>
