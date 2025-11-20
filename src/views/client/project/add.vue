@@ -163,9 +163,6 @@ async function addTask() {
     }
 }
 
-onMounted(() => {
-    getProject();
-})
 
 watch(project_key, () => {
     getProject();
