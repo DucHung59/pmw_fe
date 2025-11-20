@@ -76,14 +76,6 @@ async function acceptInvite() {
     }
 }
 
-async function signout() {
-    try {
-        userStore.logout();
-    } catch (error) {
-        console.error('Logout failed:', error);
-    }
-}
-
 onMounted(() => {
     acceptInvite();
 })
