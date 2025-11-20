@@ -134,12 +134,11 @@ import { useUserStore } from '@/store/user';
 import dayjs from 'dayjs';
 import { Button, Dialog, FileUpload, usePrimeVue, useToast, ToggleButton, Paginator } from 'primevue';
 import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 
 const $primevue = usePrimeVue();
 const route = useRoute();
-const router = useRouter();
 const userStore = useUserStore();
 
 const project_key = computed(() => route.params.project_key);
