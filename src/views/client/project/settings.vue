@@ -332,6 +332,8 @@ const status_id = ref('');
 const status_type = ref('');
 const status_color = ref('');
 
+//member data
+const selectedMember = ref({});
 
 async function getProject() {
     try {
