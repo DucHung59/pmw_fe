@@ -93,7 +93,6 @@ async function getChartData() {
                 backgroundColor: item.color
             }))
         };
-        console.log(chartData.value);
     } catch (error) {
         console.log('Có lỗi xảy ra: ' + error.message);
     }
