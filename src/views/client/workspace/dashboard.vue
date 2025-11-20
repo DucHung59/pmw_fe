@@ -353,7 +353,6 @@ async function addProject() {
         addProjectDialog.value = false;
         getProject();
     } catch (error) {
-        console.log(error);
         toast.error('Thêm dự án thất bại');
     } finally {
         isAddProjectLoading.value = false;
